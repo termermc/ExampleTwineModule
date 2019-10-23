@@ -104,6 +104,9 @@ public class Module implements TwineModule {
 			// Send not found message
 			r.response().end("404, not found... :((((");
 		});
+		
+		// Since Twine uses Eclipse Vert.x, you are free to use any Vert.x feature you want within Twine.
+		// For more on using Vert.x, you definitely should go read the documentation on their website (https:/vertx.io/)
 	}
 	
 	// Returns the module name
