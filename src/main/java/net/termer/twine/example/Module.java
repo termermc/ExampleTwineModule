@@ -126,7 +126,7 @@ public class Module implements TwineModule {
 	
 	// The Twine version this module was built for
 	public String twineVersion() {
-		// Compatible with 1.0-alpha and any version after it
-		return "1.0-alpha+";
+		// Compatible with 1.0 and any version after it
+		return "1.0+";
 	}
 }
