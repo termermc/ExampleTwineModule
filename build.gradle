@@ -9,5 +9,5 @@ repositories {
 
 dependencies {
     // Depend on Twine
-    implementation 'net.termer.twine:twine:1.5b'
+    implementation 'net.termer.twine:twine:2.0'
 }

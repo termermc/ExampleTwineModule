@@ -2,6 +2,7 @@ package net.termer.twine.example;
 
 import io.vertx.core.file.FileSystem;
 import net.termer.twine.Twine;
+import net.termer.twine.domains.Domain;
 import net.termer.twine.modules.TwineModule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,8 +25,8 @@ public class Module implements TwineModule {
     }
     // The version of Twine this was built for
     public String twineVersion() {
-        // Compatible with 1.5 and any version after it
-        return "1.5+";
+        // Compatible with 2.0 and any minor version after it
+        return "2.0+";
     }
 
     // This method is called right before Twine sets up its middleware; so this is a great place to create an upload endpoint, but not a great place for an API endpoint
@@ -33,8 +34,7 @@ public class Module implements TwineModule {
         logger.info("Setting up uploader...");
 
         // Simple (and insecure) uploader at /upload
-        // "*" specifies this will be applied for any domain
-        post("/upload", "*", r -> {
+        router().get("/upload").handler(r -> {
             r.request().setExpectMultipart(true);
 
             r.request().uploadHandler(upload -> {
@@ -64,21 +64,20 @@ public class Module implements TwineModule {
         logger.info("Setting up routes...");
 
         // Simple route at /hello
-        // "*" specifies this will be applied for any domain
-        get("/hello", "*", r -> {
+        router().get("/hello").handler(r -> {
             // Writes the response "Hello world" and ends the response
             r.response().end("Hello world");
         });
 
         // More complicated route with a route parameter
         // Visiting /hello/John will output "Hello John"
-        get("/hello/:name", "*", r -> {
+        router().get("/hello/:name").handler(r -> {
             // Writes a response using the route param
             r.response().end("Hello "+r.pathParam("name"));
         });
 
         // Route demonstrating query parameters
-        get("/product", "*", r -> {
+        router().get("/product").handler(r -> {
             // Check if "name" query param is present
             if(r.request().getParam("name") == null) {
                 // Did not include the parameter
@@ -104,14 +103,14 @@ public class Module implements TwineModule {
         });
 
         // Simple route that shuts down the server (Never make a route like this in a real module, haha)
-        get("/bye", "*", r -> {
+        router().get("/bye").handler(r -> {
             r.response().end("BYE!");
             Twine.shutdown();
         });
 
         /* Example of a POST handler */
         // Serve basic HTML form
-        get("/form", "*", r -> {
+        router().get("/form").handler(r -> {
             // Set content type
             r.response().putHeader("Content-Type", "text/html");
 
@@ -126,7 +125,7 @@ public class Module implements TwineModule {
             );
         });
         // Now handle a POST to /form
-        post("/form", "*", r -> {
+        router().get("/form").handler(r -> {
             // Always check if the message is present
             if(r.request().getParam("message") == null) {
                 // Message is not present
@@ -137,12 +136,25 @@ public class Module implements TwineModule {
             }
         });
 
+        /* Registering handlers for a domain */
+        // Get domain by name (and return the default domain if that name doesn't exist)
+        // This will reference the domain with the alias "myDomain" in twine.yml, or return the default domain if it doesn't exist
+        Domain domain = Twine.domains().byNameOrDefault("myDomain");
+        // Register routes for every hostname this domain has
+        for(String hostname : domain.hostnames()) {
+            // Using the method "virtualHost", you can bind your route to a specific hostname
+            // This can be applied to any routing method provided by router(), including "route"
+            router().get("/place").virtualHost(hostname).handler(r -> {
+                r.response().end("You've reached place on domain "+domain.name()+"!");
+            });
+        }
+
         /* Handling all requests to a domain */
-        // You can use the `handler` method to handle all request, regardless of method.
-        // `handler` can also handle all paths if you leave out the path in the method call.
+        // You can use router()'s `route` method to handle all requests, regardless of method.
+        // `route` can also handle all paths if you leave out the path in the method call.
         // This makes it well suited to serving a 404 page, or something like that.
-        // Handlers are called in the order they're registered, for all catch-all handlers should be declared last.
-        handler("*", r -> {
+        // Handlers are called in the order they're registered, so all catch-all handlers should be declared last.
+        router().route().handler(r -> {
             // Set the status to 404
             r.response().setStatusCode(404);
 
